@@ -2,62 +2,98 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.*;
 
 public class FileManager{
-    private RandomAccessFile raf;
-    final int MAX=30;
+    File file;
+    Smartphone smart;
+    RandomAccessFile randomAccessFile;
+
     public FileManager(){
+        this.file=new File("Smartphones.dat");
+        open(file);
     }
-    
-    public boolean createFile(){
-        boolean trovato=true;
-        File f=new File("archivio.dat");
+    public void open(File file){
         try{
-            raf=new RandomAccessFile(f,"rw");
-        }catch(FileNotFoundException exc){
-            trovato=false;
-            exc.printStackTrace();
+            randomAccessFile = new RandomAccessFile(file,"rw");
+        }catch(FileNotFoundException ex){
+            ex.printStackTrace();
         }
-        return trovato;
     }
-    public long numOfRecords(long record){
+    public long numberOfRecords(int RECORD_SIZE){
         long lenght=1;
         long res=0;
 
-            try {
-                lenght = raf.length();
-            }catch(IOException ex){
-                ex.printStackTrace();
-            }
-            res=lenght/recordSize;
+        try{
+            lenght = randomAccessFile.length();
+        }catch(IOException ex){
+            ex.printStackTrace();
+        }
+        res=lenght/smart.RECORD_SIZE;
         return res;
     }
-    public void writeFile(String text){
+    public boolean write(Smartphone smart){
+        boolean res = false;
         try{
-            raf.writeChar(text);
-        }catch(IOException e){
-            e.printStackTrace();
+            System.out.println("POS: "+smart.RECORD_SIZE*numberOfRecords(smart.RECORD_SIZE));
+            
+            randomAccessFile.skipBytes((int)(smart.RECORD_SIZE*numberOfRecords(smart.RECORD_SIZE)));
+            writeString(smart.getMarca());
+            writeString(smart.getModello());
+            writeString(smart.getTipoCPU());
+            randomAccessFile.writeInt(smart.getRAM());
+            randomAccessFile.writeInt(smart.getMEM());
+            res=true;
+        }catch(IOException ex){
+            res=false;
+            ex.printStackTrace();
         }
-        for(int i=MAX-1;i<MAX;i++){
+        return res;
+    }
+    public void writeString(String str){
+        try{
+            randomAccessFile.writeChars(str);
+        }catch(IOException ex){
+            ex.printStackTrace();
+        }
+        for(int i=str.length();i<smart.MAX_LENGTH;i++){
             try{
-                raf.writeChar('\0');
+                randomAccessFile.writeChar('\0');
             }catch(IOException ex){
                 ex.printStackTrace();
             }
         }
     }
-    public String readFile(){
-        String testo="";
-        try{
-            raf.seek(0);
-            for(i=0;i<numOfRecords();i++){
-                for(j=0;j<MAX;j++){
-                    testo = testo + raf.readChar();
-                }
+    public String readString(){
+        String str="";
+        char c=' ';
+        for(int i=0;i<smart.MAX_LENGTH;i++){
+            try{
+                c=randomAccessFile.readChar();
+            }catch(IOException ex){
+                ex.printStackTrace();
             }
-        }catch(IOException e){
-            e.printStackTrace();
+            if(c!='\0'){
+                str+=c;
+            }
         }
-        return testo;
+        return str;
+    }
+    public void readAll(){
+        String res = " ";
+        try{
+            randomAccessFile.seek(0);
+            for(int i = 0;i<numberOfRecords(smart.RECORD_SIZE);i++){
+                res = readString();
+                res += readString();
+                res += readString();
+                res += randomAccessFile.readInt();
+                res += randomAccessFile.readInt();
+            }
+            System.out.println(res);
+            System.out.println("");
+        }catch(IOException ex){
+            ex.printStackTrace();
+        }
     }
 }
